@@ -238,3 +238,8 @@ CONTAINER ID   IMAGE         COMMAND    CREATED         STATUS                  
 fe7cf01224ac   hello-world   "/hello"   8 minutes ago   Exited (0) 8 minutes ago             reverent_ride
 [root@VM-4-11-centos ~]#
 ```
+## Dockerfile 文件
+
+它是一个文本文件，用来配置 image。Docker 根据 该文件生成二进制的 image 文件
+
+## 实例：制作自己的 Docker 容器
