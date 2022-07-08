@@ -238,8 +238,186 @@ CONTAINER ID   IMAGE         COMMAND    CREATED         STATUS                  
 fe7cf01224ac   hello-world   "/hello"   8 minutes ago   Exited (0) 8 minutes ago             reverent_ride
 [root@VM-4-11-centos ~]#
 ```
+
 ## Dockerfile 文件
 
 它是一个文本文件，用来配置 image。Docker 根据 该文件生成二进制的 image 文件
 
 ## 实例：制作自己的 Docker 容器
+
+[Git 安装配置 | 菜鸟教程 (runoob.com)](https://www.runoob.com/git/git-install-setup.html)
+
+```
+[root@VM-4-11-centos software]# git --version
+git version 2.27.0
+```
+
+**下载源码**
+
+```
+$ git clone https://github.com/ruanyf/koa-demos.git
+$ cd koa-demos
+```
+
+```
+[root@VM-4-11-centos code]# ll
+total 36
+drwxr-xr-x 3 root root  4096 Feb  4  2018 koa-demos-master
+-rw-r--r-- 1 root root 31763 Jul  8 22:45 koa-demos-master.zip
+[root@VM-4-11-centos code]# cd koa-demos-master/
+[root@VM-4-11-centos koa-demos-master]# ll
+total 64
+drwxr-xr-x 2 root root  4096 Feb  4  2018 demos
+-rw-r--r-- 1 root root    78 Feb  4  2018 Dockerfile
+-rw-r--r-- 1 root root 16950 Feb  4  2018 logo.png
+-rw-r--r-- 1 root root   444 Feb  4  2018 package.json
+-rw-r--r-- 1 root root 14633 Feb  4  2018 package-lock.json
+-rw-r--r-- 1 root root 15539 Feb  4  2018 README.md
+[root@VM-4-11-centos koa-demos-master]#
+```
+
+**编写 Dockerfile 文件**
+首先，在项目的根目录下，新建一个文本文件`.dockerignore`，写入下面的内容。表示，这三个路径要排除，不要打包进入 image 文件。如果你没有路径要排除，这个文件可以不新建
+
+```
+.git
+node_modules
+npm-debug.log
+```
+
+**然后，在项目的根目录下，新建一个文本文件 Dockerfile**
+
+```
+FROM node:8.4
+COPY . /app
+WORKDIR /app
+RUN npm install --registry=https://registry.npm.taobao.org
+EXPOSE 3000
+```
+
+```
+FROM node:8.4：该 image 文件继承官方的 node image，冒号表示标签，这里标签是8.4，即8.4版本的 node。
+COPY . /app：将当前目录下的所有文件（除了.dockerignore排除的路径），都拷贝进入 image 文件的/app目录。
+WORKDIR /app：指定接下来的工作路径为/app。
+RUN npm install：在/app目录下，运行npm install命令安装依赖。注意，安装后所有的依赖，都将打包进入 image 文件。
+EXPOSE 3000：将容器 3000 端口暴露出来， 允许外部连接这个端口。
+```
+
+**创建 image 文件**
+
+```
+$ docker image build -t koa-demo .
+$ docker image build -t koa-demo:0.0.1 .
+```
+
+```
+上面代码中，-t参数用来指定 image 文件的名字，后面还可以用冒号指定标签。如果不指定，默认的标签就是latest。最后的那个点表示 Dockerfile 文件所在的路径，上例是当前路径，所以是一个点。
+如果运行成功，就可以看到新生成的 image 文件koa-demo了
+```
+
+```
+[root@VM-4-11-centos koa-demos-master]# docker image build -t koa-demo .
+Sending build context to Docker daemon  79.36kB
+Step 1/5 : FROM node:8.4
+8.4: Pulling from library/node
+aa18ad1a0d33: Pull complete
+90f6d19ae388: Pull complete
+94273a890192: Pull complete
+c9110c904324: Pull complete
+788d73c0fb6b: Pull complete
+f221bb562f24: Pull complete
+14414a6a768d: Pull complete
+af6d2b2ad991: Pull complete
+Digest: sha256:080488acfe59bae32331ce28373b752f3f848be8b76c2c2d8fdce28205336504
+Status: Downloaded newer image for node:8.4
+---> 386940f92d24
+Step 2/5 : COPY . /app
+---> 7b1604ce5662
+Step 3/5 : WORKDIR /app
+---> Running in 32444f525c88
+Removing intermediate container 32444f525c88
+---> 779a938d510d
+Step 4/5 : RUN ["npm", "install"]
+---> Running in fc216071469e
+npm info it worked if it ends with ok
+npm info using npm@5.3.0
+npm info using node@v8.4.0
+...
+...
+added 61 packages in 4.086s
+npm info ok
+Removing intermediate container fc216071469e
+---> 3677c907666f
+Step 5/5 : EXPOSE 3000/tcp
+---> Running in ec2728ce3152
+Removing intermediate container ec2728ce3152
+---> d6f90814c3d4
+Successfully built d6f90814c3d4
+Successfully tagged koa-demo:latest
+```
+
+```
+[root@VM-4-11-centos koa-demos-master]# docker image ls
+REPOSITORY    TAG       IMAGE ID       CREATED         SIZE
+koa-demo      latest    d6f90814c3d4   2 minutes ago   675MB
+ubuntu        latest    27941809078c   4 weeks ago     77.8MB
+hello-world   latest    feb5d9fea6a5   9 months ago    13.3kB
+node          8.4       386940f92d24   4 years ago     673MB
+[root@VM-4-11-centos koa-demos-master]#
+```
+
+**生成容器**
+
+`docker container run`命令会从 image 文件生成容器
+
+```
+$ docker container run -p 8000:3000 -it koa-demo /bin/bash
+或者
+$ docker container run -p 8000:3000 -it koa-demo:0.0.1 /bin/bash
+```
+
+```
+上面命令的各个参数含义如下：
+-p参数：容器的 3000 端口映射到本机的 8000 端口。
+-it参数：容器的 Shell 映射到当前的 Shell，然后你在本机窗口输入的命令，就会传入容器。
+koa-demo:0.0.1：image 文件的名字（如果有标签，还需要提供标签，默认是 latest 标签）。
+/bin/bash：容器启动以后，内部第一个执行的命令。这里是启动 Bash，保证用户可以使用 Shell。
+```
+
+*如果一切正常，运行上面的命令以后，就会返回一个命令行提示符。*
+
+```
+[root@VM-4-11-centos koa-demos-master]# docker container run -p 8000:3000 -it koa-demo /bin/bash
+root@fdb155aee557:/app#
+```
+
+*这表示你已经在容器里面了，返回的提示符就是容器内部的 Shell 提示符。执行下面的命令。*
+`root@66d80f4aaf1e:/app# node demos/01.js`
+
+```
+[root@VM-4-11-centos koa-demos-master]# docker container run -p 8000:3000 -it koa-demo /bin/bash
+root@fdb155aee557:/app# node demos/01.js
+```
+
+*这时，Koa 框架已经运行起来了。打开本机的浏览器，访问 http://127.0.0.1:8000，网页显示"Not Found"，这是因为这个 demo 没有写路由*
+
+
+```
+[root@VM-4-11-centos ~]# curl http://127.0.0.1:8000
+Not Found[root@VM-4-11-centos ~]#
+```
+
+*现在，在容器的命令行，按下 Ctrl + c 停止 Node 进程，然后按下 Ctrl + d （或者输入 exit）退出容器。此外，也可以用`docker container kill`终止容器运行**现在，在容器的命令行，按下 Ctrl + c 停止 Node 进程，然后按下 Ctrl + d （或者输入 exit）退出容器。此外，也可以用`docker container kill`终止容器运行*
+**CMD 命令****上一节的例子里面，容器启动以后，需要手动输入命令`node demos/01.js`。我们可以把这个命令写在 Dockerfile 里面，这样容器启动以后，这个命令就已经执行了，不用再手动输入了**
+
+```
+FROM node:8.4
+COPY . /app
+WORKDIR /app
+RUN npm install --registry=https://registry.npm.taobao.org
+EXPOSE 3000
+CMD node demos/01.js
+```
+
+**发布 image 文件**
+
